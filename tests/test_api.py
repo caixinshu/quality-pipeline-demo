@@ -31,4 +31,4 @@ class TestAPI:
     def test_price_negative(self):
         """边界值 - 负数价格"""
         resp = requests.post(f"{BASE_URL}/items", json={"name": "neg", "price": -1})
-        assert resp.status_code == 999
+        assert resp.status_code == 422
