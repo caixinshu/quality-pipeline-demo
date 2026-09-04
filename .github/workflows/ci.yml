@@ -91,5 +91,5 @@ jobs:
 
       # 8. 清理
       - name: Cleanup
-        if: always
+        if: always()
         run: docker-compose down
