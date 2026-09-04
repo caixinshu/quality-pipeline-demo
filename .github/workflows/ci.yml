@@ -44,3 +44,52 @@ jobs:
         with:
           name: coverage-report
           path: coverage.xml
+
+  api-test:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. checkout 代码
+      - uses: actions/checkout@v4
+
+      # 2. 安装 Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. 安装测试依赖
+      - name: Install test dependencies
+        run: |
+          pip install pytest requests
+          pip install -r requirements.txt
+
+      # 4. 构建 Docker 镜像
+      - name: Build Docker image
+        run: docker build -t demo-api .
+
+      # 5. 启动服务
+      - name: Start services
+        run: |
+          docker-compose up -d
+          sleep 5
+
+      # 6. 等待服务就绪
+      - name: Wait for service ready
+        run: |
+          for i in {1..30}; do
+            if curl -sf http://localhost:8000/health; then
+              echo "Service is ready!"
+              break
+            fi
+            echo "Waiting... ($i)"
+            sleep 2
+          done
+
+      # 7. 运行接口测试
+      - name: Run API tests
+        run: pytest tests/test_api.py -v
+
+      # 8. 清理
+      - name: Cleanup
+        if: always
+        run: docker-compose down
