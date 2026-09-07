@@ -47,6 +47,7 @@ jobs:
 
   api-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # 1. checkout 代码
       - uses: actions/checkout@v4
