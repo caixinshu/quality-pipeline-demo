@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import sqlite3, os
 
 app = FastAPI(title="Demo API")
@@ -7,7 +7,7 @@ DB_PATH = os.environ.get("DB_PATH", "/data/demo.db")
 
 class Item(BaseModel):
     name: str
-    price: float
+    price: float = Field(gt=0, description="商品价格，必须大于 0")
 
 @app.get("/health")
 def health():
