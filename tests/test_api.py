@@ -1,4 +1,6 @@
-import allure, requests
+import allure
+import pytest
+import requests
 
 BASE_URL = "http://localhost:8000"
 
@@ -6,6 +8,7 @@ BASE_URL = "http://localhost:8000"
 @allure.feature("商品管理")
 class TestAPI:
 
+    @pytest.mark.smoke
     @allure.story("健康检查")
     @allure.severity(allure.severity_level.BLOCKER)
     def test_health_check(self):
@@ -16,6 +19,7 @@ class TestAPI:
             assert resp.status_code == 200
             assert resp.json()["status"] == "ok"
 
+    @pytest.mark.smoke
     @allure.story("创建与查询")
     @allure.severity(allure.severity_level.CRITICAL)
     def test_create_and_query(self):
@@ -33,6 +37,7 @@ class TestAPI:
             items = resp.json()
             assert any(i["name"] == "ci_test" for i in items)
 
+    @pytest.mark.regression
     @allure.story("异常输入校验")
     @allure.severity(allure.severity_level.NORMAL)
     def test_create_invalid_data(self):
@@ -42,6 +47,7 @@ class TestAPI:
         with allure.step("验证返回 422"):
             assert resp.status_code == 422
 
+    @pytest.mark.regression
     @allure.story("边界值测试")
     @allure.severity(allure.severity_level.NORMAL)
     def test_price_negative(self):

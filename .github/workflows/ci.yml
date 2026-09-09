@@ -1,10 +1,11 @@
-name: CI Pipeline
+name: Daily Pipeline (每日级)
 
 on:
+  schedule:
+    - cron: '0 2 * * *'  # 每天凌晨 2 点（UTC）= 北京时间上午 10 点
+  workflow_dispatch:  # 支持手动触发
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop ]  # 保留 push 触发，方便开发阶段即时反馈
 
 jobs:
   unit-test:
@@ -95,10 +96,10 @@ jobs:
             sleep 2
           done
 
-      # 8. 运行接口测试并生成 Allure 结果
+      # 8. 运行全量接口测试并生成 Allure 结果
       - name: Run API tests with Allure
         run: |
-          pytest tests/test_api.py -v \
+          pytest tests/ -v \
             --alluredir=allure-results \
             --clean-alluredir
 
