@@ -10,6 +10,7 @@ on:
 jobs:
   unit-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       # 1. checkout 代码
       - uses: actions/checkout@v4
@@ -34,17 +35,25 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov
 
-      # 5. 运行单元测试
-      - name: Run unit tests
+      # 5. 运行单元测试 + 覆盖率门禁（低于 70% 失败）
+      - name: Run unit tests with coverage gate
         run: |
-          pytest tests/test_unit.py -v --cov=app --cov-report=xml
+          pytest tests/test_unit.py -v \
+            --cov=app \
+            --cov-report=term \
+            --cov-report=html \
+            --cov-report=xml \
+            --cov-fail-under=70
 
       # 6. 上传覆盖率报告
-      - name: Upload coverage
+      - name: Upload coverage report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: coverage-report
-          path: coverage.xml
+          path: |
+            coverage.xml
+            htmlcov/
 
   api-test:
     runs-on: ubuntu-latest
