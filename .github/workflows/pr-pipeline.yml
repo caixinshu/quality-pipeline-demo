@@ -38,7 +38,14 @@ jobs:
           done
 
       - name: Run smoke tests
-        run: pytest tests/ -m smoke -v --alluredir=allure-results --clean-alluredir
+        run: |
+          pytest tests/ -m smoke -v \
+            --alluredir=allure-results \
+            --clean-alluredir \
+            --junitxml=test-results.xml
+
+      - name: Quality gate check
+        run: python scripts/quality_gate.py --junit test-results.xml --min-pass-rate 1.0
 
       - name: Install Allure
         run: |
@@ -85,5 +92,8 @@ jobs:
         continue-on-error: true
 
       - name: bandit
-        run: bandit -r app/
+        run: bandit -r app/ -f txt -o bandit-report.txt
         continue-on-error: true
+
+      - name: Security quality gate
+        run: python scripts/quality_gate.py --bandit bandit-report.txt

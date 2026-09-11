@@ -43,7 +43,8 @@ jobs:
             --cov-report=term \
             --cov-report=html \
             --cov-report=xml \
-            --cov-fail-under=70
+            --cov-fail-under=70 \
+            --junitxml=test-results.xml
 
       # 6. 上传覆盖率报告
       - name: Upload coverage report
@@ -110,7 +111,8 @@ jobs:
         run: |
           pytest tests/ -v \
             --alluredir=allure-results \
-            --clean-alluredir
+            --clean-alluredir \
+            --junitxml=test-results.xml
 
       # 9. 生成 Allure HTML 报告
       - name: Generate Allure Report
