@@ -1,0 +1,73 @@
+name: Release Pipeline (发布级)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest requests allure-pytest
+
+      - name: Install Allure
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre
+          wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
+          tar -xzf allure-2.24.0.tgz
+          echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
+
+      - name: Run production smoke tests
+        env:
+          BASE_URL: ${{ secrets.PROD_BASE_URL }}
+        run: |
+          pytest tests/ -m smoke -v \
+            --alluredir=allure-results \
+            --clean-alluredir \
+            --junitxml=test-results.xml
+
+      - name: Quality gate check
+        run: python scripts/quality_gate.py --junit test-results.xml --min-pass-rate 1.0
+
+      - name: Generate report
+        if: always()
+        run: allure generate allure-results -o allure-report --clean
+        continue-on-error: true
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-smoke-${{ github.ref_name }}
+          path: allure-report/
+
+  notify:
+    needs: release-smoke
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send release notification
+        run: |
+          STATUS=${{ needs.release-smoke.result }}
+          echo "Release smoke test result: $STATUS"
+          if [ "$STATUS" = "failure" ]; then
+            echo "::error::Release smoke tests FAILED! Do not deploy."
+            exit 1
+          fi
+          echo "Release smoke tests passed. Ready to deploy."

@@ -1,0 +1,17 @@
+[coverage:run]
+source = app
+branch = True
+
+[coverage:report]
+show_missing = True
+skip_covered = False
+
+omit =
+    app/__init__.py
+    tests/*
+
+[coverage:html]
+directory = htmlcov
+
+[coverage:xml]
+output = coverage.xml
