@@ -66,6 +66,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
       # 3. 安装测试依赖
       - name: Install test dependencies
@@ -146,6 +148,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
       - name: Install lint tools
         run: |
