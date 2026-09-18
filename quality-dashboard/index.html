@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>质量度量看板 | Quality Pipeline Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>质量度量看板</h1>
+        <div class="update-time">最后更新: <span id="lastUpdated">--</span></div>
+    </header>
+
+    <!-- 核心指标卡片 -->
+    <section class="summary-cards">
+        <div class="card" id="card-pass-rate">
+            <div class="card-label">用例通过率</div>
+            <div class="card-value" id="passRate">--</div>
+            <div class="card-trend" id="passRateTrend">--</div>
+        </div>
+        <div class="card" id="card-coverage">
+            <div class="card-label">代码覆盖率</div>
+            <div class="card-value" id="coverage">--</div>
+            <div class="card-trend" id="coverageTrend">--</div>
+        </div>
+        <div class="card" id="card-bugs">
+            <div class="card-label">线上 Bug 数</div>
+            <div class="card-value" id="bugs">--</div>
+            <div class="card-trend" id="bugsTrend">--</div>
+        </div>
+        <div class="card" id="card-duration">
+            <div class="card-label">回归时长(分)</div>
+            <div class="card-value" id="duration">--</div>
+            <div class="card-trend" id="durationTrend">--</div>
+        </div>
+    </section>
+
+    <!-- 图表区域 -->
+    <section class="charts-grid">
+        <div class="chart-box">
+            <h3>通过率趋势</h3>
+            <div id="passRateChart" class="chart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>覆盖率趋势</h3>
+            <div id="coverageChart" class="chart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>用例分布</h3>
+            <div id="caseDistChart" class="chart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>流水线时长趋势</h3>
+            <div id="durationChart" class="chart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>质量指标雷达图</h3>
+            <div id="radarChart" class="chart"></div>
+        </div>
+        <div class="chart-box">
+            <h3>指标说明</h3>
+            <div class="metrics-legend">
+                <table>
+                    <tr><td class="dot" style="background:#5470c6"></td><td>用例通过率</td><td>目标 ≥ 95%</td></tr>
+                    <tr><td class="dot" style="background:#91cc75"></td><td>代码覆盖率</td><td>目标 ≥ 70%</td></tr>
+                    <tr><td class="dot" style="background:#fac858"></td><td>安全评分</td><td>目标 ≥ 90%</td></tr>
+                    <tr><td class="dot" style="background:#ee6666"></td><td>代码规范</td><td>目标 ≥ 80%</td></tr>
+                    <tr><td class="dot" style="background:#73c0de"></td><td>执行效率</td><td>目标 ≥ 80%</td></tr>
+                    <tr><td class="dot" style="background:#fc8452"></td><td>文档完善度</td><td>目标 ≥ 70%</td></tr>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>Quality Pipeline Demo | Powered by ECharts + GitHub Pages | <a href="https://github.com/caixinshu/quality-pipeline-demo" target="_blank">GitHub Repo</a></p>
+    </footer>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
