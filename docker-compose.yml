@@ -12,5 +12,19 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  ui-test:
+    build:
+      context: .
+      dockerfile: tests/ui/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - BASE_URL=http://api:8000
+    volumes:
+      - ./playwright-report:/app/playwright-report
+      - ./test-results:/app/test-results
+
 volumes:
   db-data:

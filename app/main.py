@@ -2,10 +2,29 @@ import os
 import sqlite3
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(title="Demo API")
 DB_PATH = os.environ.get("DB_PATH", "/data/demo.db")
+
+
+@app.get("/", response_class=HTMLResponse)
+def root():
+    return """
+    <html>
+        <head><title>Demo API</title></head>
+        <body>
+            <h1>Demo API Service</h1>
+            <p>Available endpoints:</p>
+            <ul>
+                <li>GET /health - Health check</li>
+                <li>GET /items - List all items</li>
+                <li>POST /items - Create a new item</li>
+            </ul>
+        </body>
+    </html>
+    """
 
 
 class Item(BaseModel):
