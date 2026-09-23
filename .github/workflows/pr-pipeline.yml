@@ -29,7 +29,7 @@ jobs:
       - name: Build & start API
         run: |
           docker build -t demo-api .
-          docker compose up -d
+          docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
               echo "Service is ready!"
@@ -105,7 +105,7 @@ jobs:
       - name: Build & start API
         run: |
           docker build -t demo-api .
-          docker compose up -d
+          docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
               echo "Service is ready!"
@@ -199,7 +199,7 @@ jobs:
       - name: Build & start services
         run: |
           docker build -t demo-api .
-          docker compose up -d
+          docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
               echo "Service is ready!"
