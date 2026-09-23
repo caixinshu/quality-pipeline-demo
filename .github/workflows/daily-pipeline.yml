@@ -117,10 +117,14 @@ jobs:
           path: |
             bandit-report.txt
 
-  # 全量 UI 测试（每日级）
+  # 全量 UI 测试（每日级）- 多浏览器并行矩阵
   full-ui-test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v4
 
@@ -134,14 +138,18 @@ jobs:
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('package.json') }}
+          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package.json') }}
           restore-keys: |
-            pw-${{ runner.os }}-
+            pw-${{ runner.os }}-${{ matrix.browser }}-
 
       - name: Install Playwright
         run: |
           npm install @playwright/test
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Install Playwright deps only (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.browser }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -166,14 +174,14 @@ jobs:
             sleep 2
           done
 
-      - name: Run full UI tests
-        run: npx playwright test --project=chromium
+      - name: Run full UI tests (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: daily-ui-report-${{ github.run_id }}
+          name: daily-ui-report-${{ matrix.browser }}-${{ github.run_id }}
           path: |
             playwright-report/
             test-results/
@@ -182,7 +190,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: daily-ui-traces-${{ github.run_id }}
+          name: daily-ui-traces-${{ matrix.browser }}-${{ github.run_id }}
           path: test-results/**/trace.zip
 
       - name: Cleanup

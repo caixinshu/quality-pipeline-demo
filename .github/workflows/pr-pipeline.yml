@@ -210,7 +210,7 @@ jobs:
           done
 
       - name: Run UI smoke tests
-        run: npx playwright test --project=chromium
+        run: npx playwright test tests/ui/smoke.spec.ts --project=chromium
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
