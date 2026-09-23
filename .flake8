@@ -1,0 +1,14 @@
+[flake8]
+# 每行最大长度
+max-line-length = 120
+# 忽略的规则
+ignore = E501, W503
+# 排除目录
+exclude =
+    .git,
+    __pycache__,
+    tests,
+    allure-results,
+    allure-report
+# 复杂度阈值
+max-complexity = 12
