@@ -8,7 +8,7 @@ on:
 jobs:
   full-api-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -16,6 +16,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
       - name: Install deps
         run: |
@@ -23,17 +25,47 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-cov requests allure-pytest
 
+      - name: Cache Allure
+        uses: actions/cache@v4
+        id: allure-cache
+        with:
+          path: allure-2.24.0
+          key: allure-2.24.0
+
       - name: Install Allure
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jre
-          wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
-          tar -xzf allure-2.24.0.tgz
+          if [ ! -f allure-2.24.0/bin/allure ]; then
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jre
+            wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
+            tar -xzf allure-2.24.0.tgz
+          else
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jre
+          fi
           echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
 
-      - name: Build & start services
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: demo-api:latest
+          cache-from: type=local,src=/tmp/.docker-cache
+          cache-to: type=local,dest=/tmp/.docker-cache
+
+      - name: Start API service
         run: |
-          docker build -t demo-api .
           docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
@@ -88,6 +120,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
       - name: Install tools
         run: |
@@ -120,7 +153,7 @@ jobs:
   # 全量 UI 测试（每日级）- 多浏览器并行矩阵
   full-ui-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +165,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package.json
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -161,9 +196,27 @@ jobs:
       - name: Install API deps
         run: pip install -r requirements.txt
 
-      - name: Build & start API
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: demo-api:latest
+          cache-from: type=local,src=/tmp/.docker-cache
+          cache-to: type=local,dest=/tmp/.docker-cache
+
+      - name: Start API service
         run: |
-          docker build -t demo-api .
           docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then

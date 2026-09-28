@@ -26,9 +26,47 @@ jobs:
           pip install -r requirements.txt
           pip install pytest requests allure-pytest
 
-      - name: Build & start API
+      - name: Cache Allure
+        uses: actions/cache@v4
+        id: allure-cache
+        with:
+          path: allure-2.24.0
+          key: allure-2.24.0
+
+      - name: Install Allure
         run: |
-          docker build -t demo-api .
+          if [ ! -f allure-2.24.0/bin/allure ]; then
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jre
+            wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
+            tar -xzf allure-2.24.0.tgz
+          else
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jre
+          fi
+          echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: demo-api:latest
+          cache-from: type=local,src=/tmp/.docker-cache
+          cache-to: type=local,dest=/tmp/.docker-cache
+
+      - name: Start API service
+        run: |
           docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
@@ -48,14 +86,6 @@ jobs:
 
       - name: Quality gate check
         run: python scripts/quality_gate.py --junit test-results.xml --min-pass-rate 1.0
-
-      - name: Install Allure
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jre
-          wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
-          tar -xzf allure-2.24.0.tgz
-          echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
 
       - name: Generate Allure Report
         if: always()
@@ -94,6 +124,26 @@ jobs:
           pip install -r requirements.txt
           pip install pytest requests allure-pytest
 
+      - name: Cache Allure
+        uses: actions/cache@v4
+        id: allure-cache
+        with:
+          path: allure-2.24.0
+          key: allure-2.24.0
+
+      - name: Install Allure
+        run: |
+          if [ ! -f allure-2.24.0/bin/allure ]; then
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jre
+            wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
+            tar -xzf allure-2.24.0.tgz
+          else
+            sudo apt-get update
+            sudo apt-get install -y openjdk-11-jre
+          fi
+          echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
+
       - name: Run precision test analysis
         id: precision
         run: |
@@ -102,9 +152,27 @@ jobs:
           echo "pytest_cmd=$CMD" >> $GITHUB_OUTPUT
           echo "Precision selected command: $CMD"
 
-      - name: Build & start API
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: demo-api:latest
+          cache-from: type=local,src=/tmp/.docker-cache
+          cache-to: type=local,dest=/tmp/.docker-cache
+
+      - name: Start API service
         run: |
-          docker build -t demo-api .
           docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
@@ -124,14 +192,6 @@ jobs:
 
       - name: Quality gate check
         run: python scripts/quality_gate.py --junit test-results.xml --min-pass-rate 1.0
-
-      - name: Install Allure
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-11-jre
-          wget https://github.com/allure-framework/allure2/releases/download/2.24.0/allure-2.24.0.tgz
-          tar -xzf allure-2.24.0.tgz
-          echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
 
       - name: Generate Allure Report
         if: always()
@@ -171,6 +231,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package.json
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -196,9 +258,27 @@ jobs:
       - name: Install API deps
         run: pip install -r requirements.txt
 
-      - name: Build & start services
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/.docker-cache
+          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
+          restore-keys: |
+            docker-${{ runner.os }}-
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: demo-api:latest
+          cache-from: type=local,src=/tmp/.docker-cache
+          cache-to: type=local,dest=/tmp/.docker-cache
+
+      - name: Start API service
         run: |
-          docker build -t demo-api .
           docker compose up -d api
           for i in {1..30}; do
             if curl -sf http://localhost:8000/health; then
