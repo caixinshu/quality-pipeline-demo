@@ -46,24 +46,8 @@ jobs:
           fi
           echo "$(pwd)/allure-2.24.0/bin" >> $GITHUB_PATH
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        id: docker-cache
-        with:
-          path: /tmp/.docker-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
-
       - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: demo-api:latest
-          cache-from: type=local,src=/tmp/.docker-cache
-          cache-to: type=local,dest=/tmp/.docker-cache
+        run: docker build -t demo-api .
 
       - name: Start API service
         run: |
@@ -152,24 +136,8 @@ jobs:
           echo "pytest_cmd=$CMD" >> $GITHUB_OUTPUT
           echo "Precision selected command: $CMD"
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        id: docker-cache
-        with:
-          path: /tmp/.docker-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
-
       - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: demo-api:latest
-          cache-from: type=local,src=/tmp/.docker-cache
-          cache-to: type=local,dest=/tmp/.docker-cache
+        run: docker build -t demo-api .
 
       - name: Start API service
         run: |
@@ -258,24 +226,8 @@ jobs:
       - name: Install API deps
         run: pip install -r requirements.txt
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        id: docker-cache
-        with:
-          path: /tmp/.docker-cache
-          key: docker-${{ runner.os }}-${{ hashFiles('Dockerfile') }}-${{ hashFiles('app/**') }}
-          restore-keys: |
-            docker-${{ runner.os }}-
-
       - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          load: true
-          tags: demo-api:latest
-          cache-from: type=local,src=/tmp/.docker-cache
-          cache-to: type=local,dest=/tmp/.docker-cache
+        run: docker build -t demo-api .
 
       - name: Start API service
         run: |
