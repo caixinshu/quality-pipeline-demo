@@ -1,0 +1,13 @@
+{
+  "name": "quality-pipeline-ui-tests",
+  "version": "1.0.0",
+  "description": "Playwright UI automation tests for quality pipeline demo",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:smoke": "npx playwright test --grep smoke",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

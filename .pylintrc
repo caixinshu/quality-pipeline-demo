@@ -1,0 +1,17 @@
+[MASTER]
+# 忽略的文件/目录
+ignore=tests,allure-results,allure-report
+
+[MESSAGES CONTROL]
+# 禁用的规则
+# C0114=缺少模块文档 C0115=缺少类文档 C0116=缺少函数文档
+# R0903=公共方法太少  C0410=一行多个import  E0401=import错误(本地环境问题)
+disable=C0114, C0115, C0116, R0903, E0401
+
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+# 命名规范
+good-names=i,j,k,e,db,id
+variable-rgx=[a-z_][a-z0-9_]{1,40}$
