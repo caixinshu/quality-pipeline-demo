@@ -1,6 +1,6 @@
 # 踩坑记录（TROUBLESHOOTING）
 
-本文档记录项目一第 1 周搭建过程中遇到的所有问题、解决思路和最终方案。这些排障经验是面试时最好的素材。
+本文档记录项目一全部四周搭建过程中遇到的所有问题、解决思路和最终方案。这些排障经验是面试时最好的素材。
 
 ---
 
@@ -302,3 +302,218 @@ git push origin feature/xxx
 2. **pip 缓存** — `actions/setup-python` 内置 `cache: pip` 参数，一行配置加速 50%
 3. **门禁白名单** — 加 `--skip` 参数或环境变量，特殊情况可临时豁免
 4. **四层流水线不重复** — 每层职责明确，冒烟只在 PR 跑，全量只在每日跑
+
+---
+
+## 七、第 3 周问题（精准测试 / 质量看板）
+
+### 问题 13：精准测试 `re.match` 匹配子目录文件失败
+
+**现象**：
+精准测试脚本中用 `re.match(r'.*\.py$', file_path)` 匹配变更文件，但 `docs/xxx.md` 等 Markdown 文件始终不匹配，导致精准测试漏选相关文档对应的用例。
+
+**分析思路**：
+1. `re.match` 只从字符串开头匹配，且 `.` 默认不匹配换行
+2. 更关键的是正则模式 `.*\.py$` 只匹配 .py 文件，不匹配 .md/.yml
+3. 子目录路径如 `docs/precision_test.md` 需要 `.*` 跨目录匹配
+
+**解决方案**：
+将正则改为 `.*(md|yml)$` 模式，使用 `re.search` 替代 `re.match`：
+```python
+# 错误写法
+re.match(r'.*\.py$', file_path)
+
+# 正确写法
+re.search(r'.*(md|yml)$', file_path)
+```
+
+**总结**：`re.match` 从字符串开头匹配，`re.search` 扫描全字符串。处理路径时注意选择正确的函数和正则模式。
+
+---
+
+### 问题 14：GitHub Pages 首次部署报 "Get Pages site failed"
+
+**现象**：
+首次运行 pages-deploy.yml 工作流，报错 `Get Pages site failed`，部署被阻断。
+
+**分析思路**：
+1. GitHub Pages 需要在仓库 Settings → Pages 中先配置 Source
+2. 首次未配置时，API 返回 404，configure-pages 步骤报错
+3. 后续 artifact 上传步骤也因此被跳过
+
+**解决方案**：
+方案一（手动）：到 Settings → Pages → Source 选择 "GitHub Actions"，然后重新运行工作流。
+方案二（CI 容错）：给 configure-pages 步骤加 `continue-on-error: true`：
+```yaml
+- name: Configure Pages
+  uses: actions/configure-pages@v5
+  continue-on-error: true  # 首次部署时 Pages 未配置会失败，不影响后续步骤
+```
+
+**总结**：GitHub Pages 首次使用需先手动配置 Source。CI 中对首次初始化步骤加容错，避免阻断后续步骤。
+
+---
+
+### 问题 15：`configure-pages` 步骤失败导致整个工作流中断
+
+**现象**：
+pages-deploy.yml 中 `configure-pages` 步骤报错后，后续 upload-artifact 和 deploy 步骤全部跳过。
+
+**分析思路**：
+1. GitHub Actions 默认行为：某步骤失败则后续步骤跳过
+2. 但 Pages 配置失败不应该阻断部署——artifact 上传不依赖 Pages 配置
+3. 需要让该步骤失败不阻断后续步骤
+
+**解决方案**：
+加 `continue-on-error: true`（已在问题 14 中修复）。
+
+**总结**：CI 中非关键步骤应加 `continue-on-error: true`，区分"必须成功"和"尽量成功"的步骤。
+
+---
+
+### 问题 16：koa-connect 包装器导致 Express 中间件迁移后 ctx 泄漏
+
+**现象**：
+将 Express 中间件迁移到 Koa 时，使用 koa-connect 包装 Express 中间件，运行一段时间后内存持续增长，ctx 对象未被回收。
+
+**分析思路**：
+1. koa-connect 的包装方式不完全兼容 Koa 的洋葱模型
+2. Express 中间件是基于回调的，Koa 是基于 async/await 的
+3. koa-connect 在某些场景下无法正确清理 ctx 引用
+
+**解决方案**：
+放弃 koa-connect，用原生 Koa 重写中间件逻辑。
+
+**总结**：跨框架迁移中间件时，不要用兼容层偷懒。原生重写虽然工作量大，但避免了难以排查的内存泄漏问题。
+
+---
+
+## 八、第 4 周问题（UI 自动化 / 流水线优化）
+
+### 问题 17：`npm ci` 失败——没有 package-lock.json
+
+**现象**：
+CI 中运行 `npm ci` 安装 Playwright 依赖时报错 `npm ci can only be used with package-lock.json`。
+
+**分析思路**：
+1. `npm ci` 要求项目根目录必须有 `package-lock.json`
+2. 项目用的是 `package.json` 但没有 lock 文件
+3. `npm ci` 比 `npm install` 更严格——它不会修改 lock 文件，适合 CI
+
+**解决方案**：
+方案一：本地运行 `npm install` 生成 `package-lock.json` 后提交。
+方案二：CI 中用 `npm install` 替代 `npm ci`：
+```dockerfile
+# Dockerfile
+RUN npm install  # 替代 npm ci
+```
+
+**总结**：`npm ci` 需要 lock 文件且适合 CI，`npm install` 更宽松。CI 中如果没有 lock 文件，先用 `npm install`。
+
+---
+
+### 问题 18：`docker compose up -d` 启动所有服务导致 ui-test 构建失败
+
+**现象**：
+PR 流水线中 `docker compose up -d` 命令启动了所有服务（包括 ui-test），但 ui-test 的 Docker 镜像构建失败（没有 package-lock.json），导致整个步骤失败。
+
+**分析思路**：
+1. docker-compose.yml 定义了两个服务：api 和 ui-test
+2. `docker compose up -d` 不带参数会启动所有服务
+3. smoke-test、precision-test 等接口测试只需要 api 服务
+4. ui-test 服务构建失败是级联原因，不是接口测试的问题
+
+**解决方案**：
+指定只启动 api 服务：
+```yaml
+# 错误写法（启动所有服务）
+docker compose up -d
+
+# 正确写法（只启动 api 服务）
+docker compose up -d api
+```
+
+**总结**：docker compose up 默认启动所有服务。在只需要部分服务时，显式指定服务名，避免无关服务构建失败导致级联错误。
+
+---
+
+### 问题 19：`docker/build-push-action` local cache 在 GitHub Actions 中不兼容
+
+**现象**：
+Day 25 优化时，将 `docker build` 改为 `docker/build-push-action@v5` + `cache-from/cache-to: type=local`，CI 报错 `buildx failed with: Learn more at https://docs.docker.com/go/build-cache-backends/`。
+
+**分析思路**：
+1. `docker/build-push-action` 依赖 buildx
+2. GitHub Actions runner 上的 buildx 不支持 `type=local` 缓存后端
+3. local cache 需要本地文件系统，而 GitHub runner 是临时的
+
+**解决方案**：
+回退到 `docker build`，删除 Docker layer cache 相关配置：
+```yaml
+# 删除以下配置
+- name: Set up Docker Buildx
+  uses: docker/setup-buildx-action@v3
+- name: Cache Docker layers
+  uses: actions/cache@v4
+  with:
+    path: /tmp/.docker-cache
+    key: docker-${{ hashFiles('Dockerfile') }}
+
+# 回退到直接 docker build
+- name: Build & start API
+  run: |
+    docker build -t demo-api .
+    docker compose up -d api
+```
+
+**总结**：GitHub Actions 环境有其限制。buildx local cache 需要持久化文件系统，不适合 GitHub 的临时 runner。如果需要 Docker 缓存，考虑用 GitHub Container Registry 或 actions/cache 配合 `type=gha`。
+
+---
+
+### 问题 20：`allure: command not found` 级联失败
+
+**现象**：
+CI 中 `docker compose up -d` 失败后，后续步骤报 `allure: command not found`。
+
+**分析思路**：
+1. 这是级联失败——Build & start API 步骤失败了
+2. Install Allure 步骤因为前一步失败被跳过
+3. Generate Allure Report 用了 `if: always()`，所以继续执行
+4. 但 Allure 没有安装，所以报 `command not found`
+
+**解决方案**：
+修复根因（问题 18：`docker compose up -d api`），级联错误自动消失。另外给 Generate Allure Report 步骤也加 `continue-on-error: true`：
+```yaml
+- name: Generate Allure report
+  if: always()
+  run: allure generate allure-results -o allure-report --clean
+  continue-on-error: true  # Allure 生成失败不阻断报告上传
+```
+
+**总结**：遇到级联失败时，先修根因，不要逐个修表象。`if: always()` 让步骤在前置失败后继续执行，但对依赖项的缺失需要做好容错。
+
+---
+
+## 第 3-4 周排障补充
+
+1. **正则匹配注意 match vs search** — `re.match` 从开头匹配，`re.search` 扫描全串；处理路径用 search
+2. **GitHub Pages 首次配置** — 必须先在 Settings → Pages 配置 Source，CI 才能正常部署
+3. **非关键步骤加容错** — `continue-on-error: true` 区分"必须成功"和"尽量成功"
+4. **docker compose 指定服务** — `docker compose up -d api` 避免无关服务构建失败
+5. **buildx local cache 不兼容** — GitHub Actions 临时 runner 不支持 local cache，回退到 docker build
+6. **npm ci vs npm install** — CI 中有 lock 文件用 `npm ci`，没有则用 `npm install`
+7. **级联失败先修根因** — 不要逐个修表象，找到第一个失败的步骤修根因
+
+---
+
+## 排障方法论（更新版）
+
+四周踩了 20+ 个坑，总结出一套排障思路：
+
+1. **看报错信息** — 先把错误信息读完整：exit code、报错栈、上下文，不要只看第一行
+2. **定位范围** — 是环境问题？配置问题？代码问题？先缩小排查范围
+3. **区分根因和级联** — 多个错误同时出现时，找到第一个失败的步骤，后面可能是级联失败
+4. **搜索验证** — 把报错信息复制去搜，大概率有人遇到过
+5. **逐一验证** — 不要一次改多处，改一个验证一个，找到真正的原因
+6. **最小回退** — 如果是优化引入的问题，先回退到优化前的稳定状态
+7. **记录下来** — 解决后立刻记录，否则下次还会踩同样的坑
