@@ -1,7 +1,7 @@
 import os
 import sqlite3
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,7 @@ def root():
             <ul>
                 <li>GET /health - Health check</li>
                 <li>GET /items - List all items</li>
+                <li>GET /items/{id} - Get a single item</li>
                 <li>POST /items - Create a new item</li>
             </ul>
         </body>
@@ -46,13 +47,25 @@ def list_items():
     return items
 
 
+@app.get("/items/{item_id}")
+def get_item(item_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"id": row[0], "name": row[1], "price": row[2]}
+
+
 @app.post("/items")
 def create_item(item: Item):
     conn = sqlite3.connect(DB_PATH)
-    conn.execute(
+    cursor = conn.execute(
         "INSERT INTO items (name, price) VALUES (?, ?)",
         (item.name, item.price),
     )
+    item_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return {"message": "created", "item": item}
+    return {"message": "created", "id": item_id, "item": item}
