@@ -1,3 +1,5 @@
+import gc
+import hashlib
 import os
 import sqlite3
 import time
@@ -12,6 +14,14 @@ from prometheus_client import (
     generate_latest,
 )
 from pydantic import BaseModel, Field
+
+# memory_profiler 运行时会向 builtins 注入 profile；正常启动时退化为无操作装饰器，
+# 保证服务不装 memory_profiler 也能跑。
+try:
+    profile  # type: ignore[name-defined]  # noqa: B018
+except NameError:
+    def profile(func):  # type: ignore[no-redef]
+        return func
 
 app = FastAPI(title="Demo API")
 DB_PATH = os.environ.get("DB_PATH", "/data/demo.db")
@@ -140,3 +150,52 @@ def create_item(item: Item):
     conn.commit()
     conn.close()
     return {"message": "created", "id": item_id, "item": item}
+
+
+# ---------------------------------------------------------------------------
+# 慢接口（项目二 Week 2 Day 11：CPU / 内存瓶颈分析实战）
+#
+# /slow/cpu          —— CPU 密集：sha256 循环哈希，用于 py-spy 火焰图定位热点
+# /slow/memory       —— 内存泄漏：全局列表只增不减，用于 memory_profiler 定位泄漏点
+# /slow/memory/clear —— 清理接口：清空列表 + gc.collect()，验证「清理后内存回落」
+#
+# 这些接口是 Day 12 性能优化实战的「靶子」，故意写得低效，请勿直接优化。
+# ---------------------------------------------------------------------------
+
+
+@app.get("/slow/cpu")
+def slow_cpu(rounds: int = 100):
+    """CPU 密集接口：对字符串做 rounds 轮 sha256 哈希。
+
+    每轮哈希串行依赖上一轮结果，无法并行；纯计算、无 IO，
+    压测时进程 CPU 使用率会顶到单核 100%，TPS 出现明显封顶。
+    """
+    data = b"perf-bottleneck-demo"
+    for _ in range(rounds * 1000):
+        data = hashlib.sha256(data).digest()
+    return {"rounds": rounds, "digest_hex": data.hex()[:16]}
+
+
+# 全局「漏水库」：模拟缓存只写不清的真实事故场景。
+_leaky_cache: list[bytes] = []
+
+
+@app.get("/slow/memory")
+@profile  # memory_profiler 逐行统计入口（mprof run 时生效）
+def slow_memory(size_kb: int = 100):
+    """内存泄漏接口：每次请求向全局列表追加 size_kb KB 数据，永不清理。
+
+    连续压测时进程 RSS 近似线性上涨；调用 /slow/memory/clear 后回落。
+    返回当前泄漏总量，便于压测脚本断言趋势。
+    """
+    _leaky_cache.append(b"x" * (size_kb * 1024))
+    cache_mb = len(_leaky_cache) * size_kb / 1024
+    return {"cached_chunks": len(_leaky_cache), "cache_mb": round(cache_mb, 2)}
+
+
+@app.post("/slow/memory/clear")
+def slow_memory_clear():
+    """清理接口：清空全局列表并强制 GC，验证内存是否可回收。"""
+    _leaky_cache.clear()
+    gc.collect()
+    return {"cleared": True, "cached_chunks": len(_leaky_cache)}
