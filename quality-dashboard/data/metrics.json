@@ -1,0 +1,55 @@
+{
+  "summary": {
+    "pass_rate": 96.5,
+    "coverage": 78.2,
+    "bugs_online": 3,
+    "regression_duration": 28,
+    "last_updated": "2026-09-18 10:30:00"
+  },
+  "trends": {
+    "pass_rate": [
+      {"date": "2026-09-12", "value": 92.1},
+      {"date": "2026-09-13", "value": 95.3},
+      {"date": "2026-09-14", "value": 94.8},
+      {"date": "2026-09-15", "value": 96.5},
+      {"date": "2026-09-16", "value": 97.2},
+      {"date": "2026-09-17", "value": 96.0},
+      {"date": "2026-09-18", "value": 96.5}
+    ],
+    "coverage": [
+      {"date": "2026-09-12", "value": 70.5},
+      {"date": "2026-09-13", "value": 72.1},
+      {"date": "2026-09-14", "value": 74.3},
+      {"date": "2026-09-15", "value": 75.8},
+      {"date": "2026-09-16", "value": 77.0},
+      {"date": "2026-09-17", "value": 77.5},
+      {"date": "2026-09-18", "value": 78.2}
+    ],
+    "duration": [
+      {"date": "2026-09-12", "value": 35},
+      {"date": "2026-09-13", "value": 32},
+      {"date": "2026-09-14", "value": 30},
+      {"date": "2026-09-15", "value": 29},
+      {"date": "2026-09-16", "value": 28},
+      {"date": "2026-09-17", "value": 29},
+      {"date": "2026-09-18", "value": 28}
+    ]
+  },
+  "case_distribution": [
+    {"name": "接口测试", "value": 12},
+    {"name": "单元测试", "value": 10},
+    {"name": "冒烟测试", "value": 2},
+    {"name": "回归测试", "value": 2}
+  ],
+  "radar": {
+    "indicators": [
+      {"name": "用例通过率", "max": 100},
+      {"name": "代码覆盖率", "max": 100},
+      {"name": "安全评分", "max": 100},
+      {"name": "代码规范", "max": 100},
+      {"name": "执行效率", "max": 100},
+      {"name": "文档完善度", "max": 100}
+    ],
+    "values": [96.5, 78.2, 90, 85, 80, 70]
+  }
+}

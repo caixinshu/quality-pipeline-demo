@@ -72,3 +72,12 @@ Thumbs.db
 
 # Docker
 *.log
+
+# Local SQLite database
+*.db
+
+# Node.js / Playwright
+node_modules/
+playwright-report/
+test-results/
+package-lock.json

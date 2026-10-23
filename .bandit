@@ -1,0 +1,13 @@
+# bandit 配置
+# 跳过的测试
+skips: []
+# 排除目录
+exclude_dirs:
+  - tests
+  - .git
+  - allure-results
+
+# 告警级别筛选（只显示中等及以上）
+severity:
+  - medium
+  - high
